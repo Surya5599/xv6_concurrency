@@ -90,6 +90,8 @@ extern int sys_exit(void);
 extern int sys_fork(void);
 extern int sys_fstat(void);
 extern int sys_getpid(void);
+extern int sys_getpriority(void);
+extern int sys_setpriority(void);
 extern int sys_kill(void);
 extern int sys_link(void);
 extern int sys_mkdir(void);
@@ -128,6 +130,8 @@ static int (*syscalls[])(void) = {
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
 [SYS_waitpid] sys_waitpid,
+[SYS_setpriority] sys_setpriority,
+[SYS_getpriority] sys_getpriority,
 };
 
 void

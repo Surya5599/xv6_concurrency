@@ -88,7 +88,7 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
-
+  p->priority = 15;
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -378,25 +378,48 @@ scheduler(void)
 {
   struct proc *p;
   struct cpu *c = mycpu();
-  c->proc = 0;
-  
+  c->proc = 0;  
+  int prior = 0;
+
   for(;;){
     // Enable interrupts on this processor.
     sti();
-
+    
+    
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
+    prior = 0;
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->state != RUNNABLE)
+      if(p->state != RUNNABLE){
         continue;
-
+      }
+      if(p->priority > prior){
+      	prior = p->priority;
+      }
+    }
+    release(&ptable.lock);
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
+    acquire(&ptable.lock);
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->state != RUNNABLE){
+        continue;
+      }
+      if(p->priority < prior){
+	p->priority += 1;
+	if(p->priority > 31){
+		p->priority = 31;
+	}
+	continue;
+      }
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
-
+      p->priority -= 1;      
+      if(p->priority < 0){
+	p->priority = 0;
+      }
       swtch(&(c->scheduler), p->context);
       switchkvm();
 
@@ -405,7 +428,6 @@ scheduler(void)
       c->proc = 0;
     }
     release(&ptable.lock);
-
   }
 }
 
@@ -583,4 +605,17 @@ procdump(void)
     }
     cprintf("\n");
   }
+}
+
+int setpriority(int prior){
+   struct proc *p = myproc();
+   acquire(&ptable.lock);
+   p->priority = prior;
+   release(&ptable.lock);
+   yield();
+   return 0;
+}
+
+int getpriority(void){
+    return myproc()->priority;
 }

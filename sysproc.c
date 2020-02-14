@@ -42,6 +42,21 @@ sys_wait(void)
   return wait(status);
 }
 
+
+int
+sys_setpriority(void)
+{
+  int prior;
+  argint(0, &prior);
+  setpriority(prior);
+  return 0;  // not reached
+}
+
+int
+sys_getpriority(void){
+  return getpriority();
+}
+
 int
 sys_kill(void)
 {
